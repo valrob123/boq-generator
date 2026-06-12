@@ -36,6 +36,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(isFirebaseConfigured);
   const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   // Track the signed-in user.
   useEffect(() => {
@@ -54,14 +55,16 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!user || !db) {
       setProfile(null);
+      setProfileLoading(false);
       return undefined;
     }
+    setProfileLoading(true);
     ensureProfile(user);
     const ref = doc(db, 'users', user.uid);
     const unsub = onSnapshot(
       ref,
-      (snap) => setProfile(snap.exists() ? snap.data() : null),
-      () => setProfile(null),
+      (snap) => { setProfile(snap.exists() ? snap.data() : null); setProfileLoading(false); },
+      () => { setProfile(null); setProfileLoading(false); },
     );
     return unsub;
   }, [user]);
@@ -74,15 +77,27 @@ export function AuthProvider({ children }) {
     setProfile(null);
   };
 
-  const plan = (profile && profile.plan) || 'free';
-  const isPro = plan === 'pro';
+  // Admins (comma-separated emails in VITE_ADMIN_EMAILS) always get full access
+  // and skip the promo wall, regardless of their stored plan.
+  const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdmin = Boolean(
+    user && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase()),
+  );
+
+  const plan = isAdmin ? 'admin' : (profile && profile.plan) || 'free';
+  const isPro = isAdmin || plan === 'pro';
 
   const value = {
     user,
     loading,
     profile,
+    profileLoading,
     plan,
     isPro,
+    isAdmin,
     configured: isFirebaseConfigured,
     isAuthed: Boolean(user),
     signIn: (email, password) => signInWithEmailAndPassword(auth, email, password),
@@ -98,8 +113,8 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {
     return {
-      user: null, loading: false, profile: null, plan: 'free', isPro: false,
-      configured: false, isAuthed: false,
+      user: null, loading: false, profile: null, profileLoading: false, plan: 'free',
+      isPro: false, isAdmin: false, configured: false, isAuthed: false,
     };
   }
   return ctx;

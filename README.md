@@ -251,3 +251,18 @@ allow update: if request.auth.uid == uid
 ```
 
 I can wire the Stripe + Cloud Function side whenever you're ready.
+
+### Admin free pass
+
+Owners/admins shouldn't be pay-walled. Add their emails to `VITE_ADMIN_EMAILS`
+(comma-separated) in `.env` (and in your Vercel env vars), then rebuild:
+
+```
+VITE_ADMIN_EMAILS=you@example.com,partner@example.com
+```
+
+Any signed-in account whose email is on this list is treated as Pro, **skips the
+promo screen entirely**, and shows an **ADMIN** badge in the sidebar — regardless
+of its Firestore `plan`. (This is a client-side convenience for gating the UI;
+for security-critical access control, enforce admin checks in Firestore rules /
+Cloud Functions too.)

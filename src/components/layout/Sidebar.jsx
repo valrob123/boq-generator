@@ -18,7 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 export default function Sidebar({ sections, active, onSelect, open, onOpenBranding, onOpenAccount }) {
   const { isDark, toggleTheme } = useTheme();
   const { companyLogo, companyName } = useSettings();
-  const { user, isPro } = useAuth();
+  const { user, isPro, isAdmin } = useAuth();
 
   return (
     <aside className={`sidebar${open ? ' is-open' : ''}`}>
@@ -81,7 +81,7 @@ export default function Sidebar({ sections, active, onSelect, open, onOpenBrandi
           <span className="sidebar__company-name">
             {user ? user.email : 'Account'}
           </span>
-          {user && isPro && <span className="plan-badge plan-badge--pro plan-badge--sm">PRO</span>}
+          {user && isAdmin ? <span className="plan-badge plan-badge--admin plan-badge--sm">ADMIN</span> : user && isPro ? <span className="plan-badge plan-badge--pro plan-badge--sm">PRO</span> : null}
         </button>
 
         <button type="button" className="sidebar__theme" onClick={toggleTheme}>
